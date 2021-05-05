@@ -7,11 +7,14 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 import sklearn.metrics as metrics
+import sklearn
 from collections import Counter
 import re
 import string
 import nltk
 from nltk.corpus import stopwords
+from sklearn.naive_bayes import BernoulliNB
+from sklearn.feature_extraction.text import TfidfVectorizer
 
 # STOPWORDS_PATH = "./mallet_en_stoplist.txt"
 nlp = English()
@@ -211,3 +214,11 @@ def convert_posts_to_features(posts, filter_stopwords=True, filter_punctuation=T
         features.append(feature_string)
 
     return features
+
+def most_informative_features(vectorizer, classifier, n=20):
+    # Adapted from https://stackoverflow.com/questions/11116697/how-to-get-most-informative-features-for-scikit-learn-classifiers#11116960
+    feature_names = vectorizer.get_feature_names()
+    coefs_with_features = sorted(zip(classifier.coef_[0], feature_names))
+    top = zip(coefs_with_features[:n], coefs_with_features[: -(n + 1) : -1])
+    for (coef_1, feature_1), (coef_2, feature_2) in top:
+        print("\t%.4f\t%-15s\t\t%.4f\t%-15s" % (coef_1, feature_1, coef_2, feature_2))
