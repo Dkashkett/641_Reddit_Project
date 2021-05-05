@@ -1,10 +1,10 @@
+from logging import disable
 import pandas as pd
 import numpy as np
 import spacy
 from spacy.tokenizer import Tokenizer
 from spacy.lang.en import English
 from sklearn.linear_model import LogisticRegression
-from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.model_selection import train_test_split
 import sklearn.metrics as metrics
 import sklearn
@@ -15,29 +15,30 @@ import nltk
 from nltk.corpus import stopwords
 from sklearn.naive_bayes import BernoulliNB
 from sklearn.feature_extraction.text import TfidfVectorizer
+import os
+from paths import PATH
+from sklearn.model_selection import cross_val_score
+from sklearn.model_selection import StratifiedKFold, KFold
+from sklearn.model_selection import RepeatedKFold
+from sklearn.model_selection import cross_val_score
+from sklearn.linear_model import LogisticRegression
+from sklearn.feature_extraction.text import CountVectorizer
+
 
 # STOPWORDS_PATH = "./mallet_en_stoplist.txt"
-nlp = English()
+nlp = English(disable=["parser", "tagger", "ner"])
 STOPWORDS = set(stopwords.words("english"))
 
 
-def import_data():
+def import_data(dir_path):
     # file paths
-    crowd_train_posts_path = (
-        "./umd_reddit_suicidewatch_dataset_v2/crowd/train/shared_task_posts.csv"
-    )
-    crowd_test_posts_path = (
-        "./umd_reddit_suicidewatch_dataset_v2/crowd/test/shared_task_posts_test.csv"
-    )
-    crowd_train_labels_path = (
-        "./umd_reddit_suicidewatch_dataset_v2/crowd/train/crowd_train.csv"
-    )
-    crowd_test_labels_path = (
-        "./umd_reddit_suicidewatch_dataset_v2/crowd/test/crowd_test.csv"
-    )
+    crowd_train_posts_path = dir_path + "/crowd/train/shared_task_posts.csv"
+    crowd_test_posts_path = dir_path + "/crowd/test/shared_task_posts_test.csv"
+    crowd_train_labels_path = dir_path + "/crowd/train/crowd_train.csv"
+    crowd_test_labels_path = dir_path + "/crowd/test/crowd_test.csv"
 
     # read in files
-    print("...fetching data....")
+    print("...fetching data...")
     train_posts = pd.read_csv(crowd_train_posts_path)
     train_labels = pd.read_csv(crowd_train_labels_path)
     test_posts = pd.read_csv(crowd_test_posts_path)
@@ -66,15 +67,9 @@ def import_data():
     posts = combined_data.drop(["label"], axis=1).post.values
     labels = combined_data["label"].values
     print("...imported successfully.")
+    print("")
 
     return posts, labels
-
-
-def load_stopwords(filename):
-    stopwords = []
-    with open(filename, "r", encoding="ascii", errors="ignore") as fp:
-        stopwords = fp.read().split("\n")
-    return set(stopwords)
 
 
 def clean_post(post):
@@ -184,10 +179,10 @@ def count_ngrams(
             else:
                 d[key] = value
     print("...finished successfully.")
-    return d
+    return sort_ngram_count_results(d)
 
 
-def print_sorted_counts(counter, n=50, asc=False):
+def sort_ngram_count_results(counter, n=50, asc=False):
     frame = pd.DataFrame({"ngram": counter.keys(), "freq": counter.values()})
     sorted_frame = (
         frame.sort_values(by="freq", ascending=asc)
@@ -195,7 +190,13 @@ def print_sorted_counts(counter, n=50, asc=False):
         .drop(["index"], axis=1)
         .head(n)
     )
-    print(sorted_frame)
+    return sorted_frame
+
+
+def compare_counts(counters):
+    frame = pd.concat(counters, axis=1)
+    frame.columns = ["suicidal", "freq", "non-suicidal", "freq"]
+    return frame
 
 
 def convert_posts_to_features(posts, filter_stopwords=True, filter_punctuation=True):
@@ -215,6 +216,7 @@ def convert_posts_to_features(posts, filter_stopwords=True, filter_punctuation=T
 
     return features
 
+
 def most_informative_features(vectorizer, classifier, n=20):
     # Adapted from https://stackoverflow.com/questions/11116697/how-to-get-most-informative-features-for-scikit-learn-classifiers#11116960
     feature_names = vectorizer.get_feature_names()
@@ -222,3 +224,30 @@ def most_informative_features(vectorizer, classifier, n=20):
     top = zip(coefs_with_features[:n], coefs_with_features[: -(n + 1) : -1])
     for (coef_1, feature_1), (coef_2, feature_2) in top:
         print("\t%.4f\t%-15s\t\t%.4f\t%-15s" % (coef_1, feature_1, coef_2, feature_2))
+
+
+def make_features(X_train, X_test):
+    vectorizer = CountVectorizer(analyzer="word", ngram_range=(1, 2))
+    train_features = vectorizer.fit_transform(X_train)
+    test_features = vectorizer.transform(X_test)
+    return train_features, test_features
+
+
+def cross_validation(
+    model, train_features, y_train, metric="accuracy", n_folds=5, stratify=True
+):
+    if stratify == True:
+        cv = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=13)
+    else:
+        cv = KFold(n_splits=n_folds, shuffle=True, random_state=13)
+
+    model = model
+    model.fit(train_features, y_train)
+
+    print("...running cross validation...")
+    accuracy_scores = cross_val_score(
+        model, train_features, y_train, scoring=metric, cv=cv
+    )
+    print(f"mean accuracy: {np.mean(accuracy_scores)}")
+    print("")
+    return model
