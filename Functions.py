@@ -225,29 +225,3 @@ def most_informative_features(vectorizer, classifier, n=20):
     for (coef_1, feature_1), (coef_2, feature_2) in top:
         print("\t%.4f\t%-15s\t\t%.4f\t%-15s" % (coef_1, feature_1, coef_2, feature_2))
 
-
-def make_features(X_train, X_test):
-    vectorizer = CountVectorizer(analyzer="word", ngram_range=(1, 2))
-    train_features = vectorizer.fit_transform(X_train)
-    test_features = vectorizer.transform(X_test)
-    return train_features, test_features
-
-
-def cross_validation(
-    model, train_features, y_train, metric="accuracy", n_folds=5, stratify=True
-):
-    if stratify == True:
-        cv = StratifiedKFold(n_splits=n_folds, shuffle=True, random_state=13)
-    else:
-        cv = KFold(n_splits=n_folds, shuffle=True, random_state=13)
-
-    model = model
-    model.fit(train_features, y_train)
-
-    print("...running cross validation...")
-    accuracy_scores = cross_val_score(
-        model, train_features, y_train, scoring=metric, cv=cv
-    )
-    print(f"mean accuracy: {np.mean(accuracy_scores)}")
-    print("")
-    return model
