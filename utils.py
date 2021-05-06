@@ -1,3 +1,7 @@
+import os
+import pandas as pd
+from sklearn.model_selection import train_test_split
+
 
 def create_dataset_and_directory(X, y, destination_path, test_size=0.1):
     dir_path = os.path.join(destination_path, "dataset")
@@ -30,12 +34,12 @@ def create_dataset_and_directory(X, y, destination_path, test_size=0.1):
         pos_posts = data[data["label"] == 1]["post"].values
         neg_posts = data[data["label"] == 0]["post"].values
         for index, post in enumerate(pos_posts):
-            post_path = os.path.join(train_pos_path, str(index))
+            post_path = os.path.join(train_pos_path, 'post'+str(index)+'.txt')
             with open(post_path, "wt") as f:
                 f.write(post)
                 f.close()
         for index, post in enumerate(neg_posts):
-            post_path = os.path.join(train_neg_path, str(index))
+            post_path = os.path.join(train_neg_path, 'post'+str(index)+'.txt')
             with open(post_path, "wt") as f:
                 f.write(post)
                 f.close()
@@ -45,14 +49,13 @@ def create_dataset_and_directory(X, y, destination_path, test_size=0.1):
         pos_posts = data[data["label"] == 1]["post"].values
         neg_posts = data[data["label"] == 0]["post"].values
         for index, post in enumerate(pos_posts):
-            post_path = os.path.join(test_pos_path, str(index))
+            post_path = os.path.join(test_pos_path, 'post'+str(index)+'.txt')
             with open(post_path, "wt") as f:
                 f.write(post)
                 f.close()
         for index, post in enumerate(neg_posts):
-            post_path = os.path.join(test_neg_path, str(index))
+            post_path = os.path.join(test_neg_path, 'post'+str(index)+'.txt')
             with open(post_path, "wt") as f:
                 f.write(post)
                 f.close()
         print("...dataset and directories created succesfully.")
-
