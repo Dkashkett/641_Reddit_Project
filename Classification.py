@@ -8,8 +8,10 @@ from tensorflow.keras import losses
 from tensorflow.keras import preprocessing
 from tensorflow.keras.layers.experimental.preprocessing import TextVectorization
 from Functions import *
+from utils import *
 from tensorflow.keras.wrappers.scikit_learn import KerasClassifier
 import fasttext
+import os
 
 
 def make_features(X_train, X_test):
@@ -41,12 +43,16 @@ def run_cross_validation(
 
 X, y = import_data(PATH)
 
+# X_train, X_test, y_train, y_test = train_test_split(
+#     X, y, test_size=0.1, random_state=42
+# )
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.1, random_state=42
-)
+# train_features, test_features = make_features(X_train, X_test)
+# model = run_cross_validation(
+#     LogisticRegression(solver="liblinear"), train_features, y_train
+# )
 
-train_features, test_features = make_features(X_train, X_test)
-model = run_cross_validation(
-    LogisticRegression(solver="liblinear"), train_features, y_train
-)
+
+destination = "/Users/danielkashkett/Desktop/641_Reddit_Project"
+
+create_dataset_and_directory(X, y, destination)
